@@ -1,0 +1,52 @@
+name: CI/CD para mi-app
+
+on:
+  push:
+    branches:
+      - master  # Se ejecutará al hacer push en la rama master
+
+jobs:
+  # 1. Construir y publicar la imagen Docker
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout del código fuente
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Login en Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Construir y subir la imagen Docker
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/mi-app:latest
+
+  # 2. Desplegar en el servidor
+  deploy:
+    runs-on: self-hosted  # Ejecutar en el servidor
+    needs: build          # Esperar a que termine el job "build"
+
+    steps:
+      # Limpiar contenedores e imágenes viejas
+      - name: Clean existing container
+        run: |
+          docker stop mi-app || true
+          docker rm mi-app || true
+
+      # Descargar la nueva imagen de Docker Hub
+      - name: Pull new Docker image
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/mi-app:latest
+
+      # Ejecutar el contenedor con Docker Compose
+      - name: Run Docker Compose
+        run: docker run -d --name mi-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/mi-app:latest
