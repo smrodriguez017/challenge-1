@@ -8,16 +8,16 @@ on:
 jobs:
   # 1. Construir y publicar la imagen Docker
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, windows]  # Usar un runner autoalojado en Windows
 
     steps:
       # Checkout del código fuente
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3  # Actualización a v3
 
       # Login en Docker Hub
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2  # Actualización a v2
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -26,15 +26,15 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v2
         with:
-          context: .
+          context: .  # Contexto donde se encuentra el Dockerfile y el código
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/mi-app:latest
+          tags: ${{ secrets.DOCKER_USER }}/mi-app:latest
 
   # 2. Desplegar en el servidor
   deploy:
-    runs-on: self-hosted  # Ejecutar en el servidor
-    needs: build          # Esperar a que termine el job "build"
+    runs-on: [self-hosted, windows]  # Usar un runner autoalojado en Windows
+    needs: build            # Esperar a que termine el job "build"
 
     steps:
       # Limpiar contenedores e imágenes viejas
@@ -45,8 +45,8 @@ jobs:
 
       # Descargar la nueva imagen de Docker Hub
       - name: Pull new Docker image
-        run: docker pull ${{ secrets.DOCKER_USERNAME }}/mi-app:latest
+        run: docker pull ${{ secrets.DOCKER_USER }}/mi-app:latest
 
       # Ejecutar el contenedor con Docker Compose
-      - name: Run Docker Compose
-        run: docker run -d --name mi-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/mi-app:latest
+      - name: Run Docker Container
+        run: docker run -d --name mi-app -p 80:80 ${{ secrets.DOCKER_USER }}/mi-app:latest
