@@ -1,8 +1,0 @@
-version: '3.8'
-
-services:
-  challenge:
-    image: ${{ secrets.DOCKER_USER }}/challenge:latest
-    container_name: container-challenge
-    ports:
-      - "80:80" # Mapea el puerto 80 del contenedor al host
